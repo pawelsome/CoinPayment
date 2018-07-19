@@ -118,6 +118,7 @@ class CoinPaymentController extends Controller
         $user = auth()->user();
         if ($payment['error'] == 'ok' && (INT)$user->coinpayment_transactions()->where('payment_id', $req->result['txn_id'])->count('id') === 0) {
             $data = $payment['result'];
+            // Custom function
             $transaction = new TransactionService();
             $transaction = $transaction->addPayment($user, $req->amountTotalUsd, 0, 1, null);
             $saved = [
