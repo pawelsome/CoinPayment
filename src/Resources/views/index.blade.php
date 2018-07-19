@@ -323,7 +323,8 @@
               var parameters = {
                 result,
                 params: {!! $params !!},
-                payload: {!! $payload !!}
+                payload: {!! $payload !!},
+                  amountTotalUsd: params.amount
               };
               axios.post(`{{ route('coinpayment.ajax.trxinfo') }}`, parameters)
                 .then(function(json){

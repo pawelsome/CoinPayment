@@ -2,6 +2,7 @@
 
 namespace Hexters\CoinPayment\Http\Controllers;
 
+use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
@@ -17,6 +18,7 @@ use App\Jobs\IPNHandlerCoinPaymentJob;
 use Hexters\CoinPayment\Events\IPNErrorReportEvent as SendEmail;
 
 use CoinPayment;
+use Illuminate\Support\Facades\Log;
 use Route;
 
 class CoinPaymentController extends Controller
@@ -105,7 +107,6 @@ class CoinPaymentController extends Controller
             'currency1' => config('coinpayment.default_currency'),
             'currency2' => $req->payment_method,
         ];
-
         return CoinPayment::api_call('create_transaction', $params);
     }
 
@@ -117,9 +118,11 @@ class CoinPaymentController extends Controller
         $user = auth()->user();
         if ($payment['error'] == 'ok' && (INT)$user->coinpayment_transactions()->where('payment_id', $req->result['txn_id'])->count('id') === 0) {
             $data = $payment['result'];
-
+            $transaction = new TransactionService();
+            $transaction = $transaction->addPayment($user, $req->amountTotalUsd, 0, 1, null);
             $saved = [
                 'payment_id' => $req->result['txn_id'],
+                'transaction_id' => $transaction->id,
                 'payment_address' => $data['payment_address'],
                 'coin' => $data['coin'],
                 'fiat' => config('coinpayment.default_currency'),
@@ -133,7 +136,6 @@ class CoinPaymentController extends Controller
                 'status_url' => empty($req->result['status_url']) ? '' : $req->result['status_url'],
                 'payload' => empty($req->payload) ? json_encode([]) : json_encode($req->payload),
             ];
-
             $user->coinpayment_transactions()->create($saved);
         }
 
